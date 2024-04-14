@@ -26,7 +26,7 @@ import { render } from "react-dom";
 import  ResponseHandler  from "./ResponseHandler";
 import { toast } from "react-toastify";
 import { AlertContext } from './UserContext';
-import CouponDialog from './CouponDialog';
+import {CouponDialog} from './CouponDialog';
 
 const productsList = [
   {
@@ -123,10 +123,10 @@ export default function ListComponent() {
   const [products, setProducts] = useState([]);
   const [showCouponDialog, setShowCouponDialog] = useState(false);
   const navigate = useNavigate();
-  
+  const [reload, setReload] = useState(false)
   useEffect(() => {
     getAllProducts();
-  },[]);
+  },[reload]);
 
   const getAllProducts = async() => {
     const response = await ProductService().getAllProducts();
@@ -147,7 +147,9 @@ export default function ListComponent() {
     const response = await ProductService().deleteProduct(product_id);
     ResponseHandler().handle(response,  (success)=> {
       // alert(JSON.stringify(success))
+      setReload(true)
       setToastContent({'type':'success', message:'Product removed successfully'})
+      
       // window.location.reload()
     }, err => setToastContent({'type':'error', message:'Unable to remove product'}));
   };
@@ -159,14 +161,6 @@ export default function ListComponent() {
   //  setSelectedProduct(product)
   };
 
-  const handleCouponDialog = () => {
-    // setToastContent({type:'success', message:`Coupon details for ${productId}`})
-    setShowCouponDialog(!showCouponDialog);
-  }
-
-  const handleCouponShow =(coupon_code) =>{ 
-    coupon_code && handleCouponDialog()
-  }
   return (
     <div className="bg-white relative  p-10  shadow-md">
       {/* <CreateProductModal product={selectedProduct} setToastContent={setToastContent} show={showModal} title={`Update Product- ${selectedProduct?.product_id}`}/> */}
@@ -212,36 +206,10 @@ export default function ListComponent() {
                           value={product.barcode}
                           className="p-3 rounded-lg hover:bg-slate-300"
                         />
-                        <div
-                          className="hover:bg-slate-300 p-3 rounded-lg cursor-pointer"
-                          onClick={() => {
-                            handleCouponShow(product.coupon_code);
-                          }}
-                          >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke-width="1.5"
-                            stroke="currentColor"
-                            class="w-6 h-6"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M12 3.75v16.5M2.25 12h19.5M6.375 17.25a4.875 4.875 0 0 0 4.875-4.875V12m6.375 5.25a4.875 4.875 0 0 1-4.875-4.875V12m-9 8.25h16.5a1.5 1.5 0 0 0 1.5-1.5V5.25a1.5 1.5 0 0 0-1.5-1.5H3.75a1.5 1.5 0 0 0-1.5 1.5v13.5a1.5 1.5 0 0 0 1.5 1.5Zm12.621-9.44c-1.409 1.41-4.242 1.061-4.242 1.061s-.349-2.833 1.06-4.242a2.25 2.25 0 0 1 3.182 3.182ZM10.773 7.63c1.409 1.409 1.06 4.242 1.06 4.242S9 12.22 7.592 10.811a2.25 2.25 0 1 1 3.182-3.182Z"
-                            />
-                          </svg>
-                          {product.coupon_code ?  product.coupon_code : "Not Available"}
-                          {product.coupon_code && showCouponDialog && (
-                            <CouponDialog
+                            <CouponDialog key={product.coupon_code}
                               couponCode={product.coupon_code}
                               productId={product.product_id}
-                              show={showCouponDialog}
-                              handleCouponDialog={handleCouponDialog}
                             />
-                          )}
-                        </div>
                       </div>
                       <div className="flex mr-3">
                         <button

@@ -69,7 +69,12 @@ const CreateProductModal = (props) => {
     const getCouponDetails = async(coupon_code) => {
         const response = await CouponService().retrieveCoupon(coupon_code);
         if(response) {
-            setCoupon(response)
+            if(response.status===200 && response.data) {
+                setCoupon(response.data)
+            } else {
+                setCoupon(undefined)
+                setToastContent({type:'error', message:'Failed to get coupon details'})
+            }
         }
     }
 
@@ -88,14 +93,21 @@ const CreateProductModal = (props) => {
             productObj1['image_src']=s3Url;
             console.log('productOBJ1 ',productObj1 )
         }
-        
+        console.log('product for update:', productObj1)
         if(productObj.isCouponBased) {
-            if(createNewCoupon()){
-                productObj['coupon_code'] = coupon.coupon_code
-                productObj1['coupon_code'] = coupon.coupon_code;
+            const creat = await createNewCoupon();
+            console.log('created: ', creat)
+            if(creat){
+                console.log('in create coupon')
+                setProductObj({...productObj1, coupon_code:undefined})
+                productObj1['coupon_code'] = undefined;
             }else{
-                return;
+                setLoading(false)
+                return false;
             }
+        } else {
+            setProductObj({...productObj1, coupon_code:undefined})
+            productObj1['coupon_code'] = undefined
         }
 
 
@@ -156,8 +168,21 @@ const CreateProductModal = (props) => {
     }
 
     const createNewCoupon  = async (event) => {
-
-        setToastContent({type: 'info', 'message':`${coupon.coupon_code}`})
+        const pattern = /^\d{4}-\d{2}-\d{2}$/i;
+        if(!coupon || !coupon.coupon_code) {
+            setToastContent({type: 'error', 'message':`Please enter couponCode`})
+            return Promise.resolve(false);
+        } else if(!coupon.discount_amount){
+            setToastContent({type: 'error', 'message':`Please enter discount amount`})
+            return Promise.resolve(false);
+        } else if(!coupon.validity || !(pattern.test(coupon.validity)) || (new Date(coupon.validity)< new Date())){
+            setToastContent({type: 'error', 'message':`Invalid Coupon Validity`})
+            return Promise.resolve(false);
+        } else if(!coupon.description) {
+            setToastContent({type: 'error', 'message':`Please enter coupon description`})
+            return Promise.resolve(false);
+        } else {
+        // setToastContent({type: 'info', 'message':`${coupon.coupon_code}`})
         let data = { "httpMethod": "POST"};
         coupon['coupon_id'] = coupon.coupon_code
         data['body'] = coupon
@@ -165,11 +190,12 @@ const CreateProductModal = (props) => {
        const response = await CouponService().createCoupon(data);
        if(response && response.statusCode===200 && response.body){
             setToastContent({'type':'success', message: `coupon ${coupon.coupon_code} created successfully.`})
-            return true;
+            return Promise.resolve(false);
         }
-       console.log('save coupon response: ', response)
-       setToastContent({'type':'error', message: `Failed to create coupon ${coupon.coupon_code}`})
-        return true;
+        console.log('save coupon response: ', response)
+        setToastContent({'type':'error', message: `Failed to create coupon ${coupon.coupon_code}`})
+        }
+        return Promise.resolve(false);
     }
 
   return (
@@ -254,7 +280,7 @@ const CreateProductModal = (props) => {
                       name="candidates"
                       type="checkbox"
                       className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                    value={"checked"} checked={productObj.isCouponBased}
+                    value={"checked"} checked={productObj?.isCouponBased}
                     onChange ={handleIsCouponBased}
                     
                     />
@@ -268,10 +294,10 @@ const CreateProductModal = (props) => {
                 </div>
                 
                 </div>
-              { (productObj.isCouponBased)  &&  <React.Fragment className='border-1 border-dashed p-3 border-slate-300'><div className="col-span-1 p-1 sm:col-span-1 ">
+              { (productObj.isCouponBased) &&  <React.Fragment className='border-1 border-dashed p-3 border-slate-300'><div className="col-span-1 p-1 sm:col-span-1 ">
                         <label for="Coupon Code" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Coupon Code</label>
                         <input type="text" name="couponCode" id="couponCode"
-                        value={coupon.coupon_code} 
+                        value={coupon?.coupon_code} 
                         // disabled={disabled}
                         onChange={(e) => {setCoupon({...coupon, coupon_code:e.target.value})}}
                          className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="NEWYEAR50" required="" />
@@ -280,14 +306,14 @@ const CreateProductModal = (props) => {
                         <label for="Discount Amount" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Discount Amount</label>
                         <input type="number"
                         //  disabled={disabled}
-                        value={coupon.discount_amount}
+                        value={coupon?.discount_amount}
                         onChange={(e) => {setCoupon({...coupon, discount_amount:e.target.value})}}
                          name="discountAmount" id="discountAmount" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="30" required="" />
                     </div> 
                     <div className="col-span-1 p-1">
                         <label for="couponExpiry" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Valid Upto</label>
-                        <input type="date" name="couponExpiry" id="couponExpiry" 
-                            value={coupon.validity}
+                        <input type="text" name="couponExpiry" id="couponExpiry" 
+                            value={coupon?.validity}
                             // disabled={disabled}
                             onChange={(e) => {setCoupon({...coupon, validity:e.target.value})}}
                             pattern="\d{4}-\d{2}-\d{2}"
@@ -297,7 +323,7 @@ const CreateProductModal = (props) => {
                     <div className="col-span-2 me-3 p-3">
                         <label for="coupondisc" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Coupon Discription</label>
                         <input type="text" name="couponDisc" id="couponDisc" 
-                            value={coupon.description}
+                            value={coupon?.description}
                             // disabled={disabled}
                             onChange={(e) => {setCoupon({...coupon, description:e.target.value})}}
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500" placeholder="New Year Sale 50%" required="" />

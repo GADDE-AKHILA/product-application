@@ -1,26 +1,66 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import CouponDetails from './CouponDetails'
+import CouponService from '../service/CouponService'
 
-export default function CouponDialog({couponCode, productId, show, handleCouponDialog}) {
-  const [open, setOpen] = useState(show)
+export function CouponDialog({couponCode, productId}) {
+  const [open, setOpen] = useState(false)
+  const [couponDetails, setCouponDetails] = useState();
 
-
-  const [couponDetails, setCouponDetails] = useState({
-    "coupon_code": "NEWUSER10",
-    "discount_type": "percentage",
-    "discount_amount": "10",
-    "coupon_id": "Coupon1",
-    "description": "10% off for new users",
-    "validity": "2024-12-31"
-})
+  /* useEffect(() => {
+    getCouponDetails()
+  },[couponCode])  */
+const getCouponDetails = async() => {
+ const response = await CouponService().retrieveCoupon(couponCode);
+ console.log('response coupon: ', response)
+ if(response){
+  if(response.status===200) {
+    setCouponDetails(response.data);
+  } else {
+    setCouponDetails(undefined)
+  }
+ } else {
+  setCouponDetails(undefined)
+ }
+}
   const cancelButtonRef = useRef(null)
   const handleClose =() =>{
     setOpen(false);
-    handleCouponDialog();
+  }
+
+
+  const handleCouponShow = () => {
+    if(couponCode) {
+      getCouponDetails();
+    }
+    setOpen(true)
   }
   return (
+
+    <>
+       <div
+                          className="hover:bg-slate-300 p-3 rounded-lg cursor-pointer"
+                          onClick={() => {
+                            handleCouponShow();
+                          }}
+                          >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke-width="1.5"
+                            stroke="currentColor"
+                            class="w-6 h-6"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M12 3.75v16.5M2.25 12h19.5M6.375 17.25a4.875 4.875 0 0 0 4.875-4.875V12m6.375 5.25a4.875 4.875 0 0 1-4.875-4.875V12m-9 8.25h16.5a1.5 1.5 0 0 0 1.5-1.5V5.25a1.5 1.5 0 0 0-1.5-1.5H3.75a1.5 1.5 0 0 0-1.5 1.5v13.5a1.5 1.5 0 0 0 1.5 1.5Zm12.621-9.44c-1.409 1.41-4.242 1.061-4.242 1.061s-.349-2.833 1.06-4.242a2.25 2.25 0 0 1 3.182 3.182ZM10.773 7.63c1.409 1.409 1.06 4.242 1.06 4.242S9 12.22 7.592 10.811a2.25 2.25 0 1 1 3.182-3.182Z"
+                            />
+                          </svg>
+                          {couponCode ?  couponCode : "Not Available"}
+    </div>
     <Transition.Root show={open} as={Fragment}>
       <Dialog as="div" className="relative z-10" initialFocus={cancelButtonRef} onClose={setOpen}>
         <Transition.Child
@@ -48,7 +88,7 @@ export default function CouponDialog({couponCode, productId, show, handleCouponD
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
               <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                <CouponDetails coupon={couponDetails} productId={productId}/>
+               {couponDetails ? <CouponDetails coupon={couponDetails} productId={productId}/> : <p className='text-red-800'>Coupon not found.</p> }
                 <button
                     type="button"
                     className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
@@ -65,5 +105,6 @@ export default function CouponDialog({couponCode, productId, show, handleCouponD
         </div>
       </Dialog>
     </Transition.Root>
+    </>
   )
 }
