@@ -69,7 +69,7 @@ export  function LoginComponent() {
               alt="Your Company"
             />
              <h2 className="mt-2 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-             Welcome Back to Product Mart
+             Welcome Back to StyleUp
             </h2>
             <h2 className=" text-center text-sm font-normal leading-9 tracking-tight text-gray-900">
               manage your inventory here
