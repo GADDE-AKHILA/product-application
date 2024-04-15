@@ -8,14 +8,14 @@ export function CouponDialog({couponCode, productId}) {
   const [open, setOpen] = useState(false)
   const [couponDetails, setCouponDetails] = useState();
 
-  /* useEffect(() => {
-    getCouponDetails()
-  },[couponCode])  */
+  useEffect(() => {
+    // getCouponDetails()
+  },[couponDetails]) 
 const getCouponDetails = async() => {
  const response = await CouponService().retrieveCoupon(couponCode);
  console.log('response coupon: ', response)
  if(response){
-  if(response.status===200) {
+  if(response.status==='SUCCESS') {
     setCouponDetails(response.data);
   } else {
     setCouponDetails(undefined)

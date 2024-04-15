@@ -69,7 +69,7 @@ const CreateProductModal = (props) => {
     const getCouponDetails = async(coupon_code) => {
         const response = await CouponService().retrieveCoupon(coupon_code);
         if(response) {
-            if(response.status===200 && response.data) {
+            if(response.status==='SUCCESS' && response.data) {
                 setCoupon(response.data)
             } else {
                 setCoupon(undefined)
@@ -99,8 +99,8 @@ const CreateProductModal = (props) => {
             console.log('created: ', creat)
             if(creat){
                 console.log('in create coupon')
-                setProductObj({...productObj1, coupon_code:undefined})
-                productObj1['coupon_code'] = undefined;
+                setProductObj({...productObj1, coupon_code:coupon.coupon_code})
+                productObj1['coupon_code'] = coupon.coupon_code;
             }else{
                 setLoading(false)
                 return false;
@@ -185,12 +185,13 @@ const CreateProductModal = (props) => {
         // setToastContent({type: 'info', 'message':`${coupon.coupon_code}`})
         let data = { "httpMethod": "POST"};
         coupon['coupon_id'] = coupon.coupon_code
-        data['body'] = coupon
+        coupon['discount_type'] ="percentage"
+        data['body'] = JSON.stringify(coupon)
         console.log('creating coupon : ', data)
        const response = await CouponService().createCoupon(data);
-       if(response && response.statusCode===200 && response.body){
+       if(response && response.status==='SUCCESS' && response.data){
             setToastContent({'type':'success', message: `coupon ${coupon.coupon_code} created successfully.`})
-            return Promise.resolve(false);
+            return Promise.resolve(true);
         }
         console.log('save coupon response: ', response)
         setToastContent({'type':'error', message: `Failed to create coupon ${coupon.coupon_code}`})
